@@ -65,7 +65,10 @@ def write_json(path: Path, data: Any) -> None:
     :raises OSError: if the file cannot be written.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
-    handle = tempfile.NamedTemporaryFile(
+    # Not a context manager here on purpose: the file must outlive the open()
+    # call so it can be renamed into place, and it is closed by the `with`
+    # block below and removed by the except.
+    handle = tempfile.NamedTemporaryFile(  # noqa: SIM115
         mode="w",
         encoding="utf-8",
         dir=path.parent,

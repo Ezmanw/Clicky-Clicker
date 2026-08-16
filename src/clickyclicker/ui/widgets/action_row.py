@@ -13,7 +13,8 @@ keyboard.
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from gi.repository import Adw, Gdk, GObject, Gtk
 
@@ -131,7 +132,7 @@ class ActionEditorRow(Adw.ExpanderRow):
         popover = Gtk.Popover()
         listbox = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
         listbox.add_css_class("navigation-sidebar")
-        for label, command in menu:
+        for label, _command in menu:
             row = Gtk.ListBoxRow()
             row.set_child(Gtk.Label(label=label, xalign=0.0, margin_top=6, margin_bottom=6))
             row.set_activatable(True)

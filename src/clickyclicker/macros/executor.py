@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import logging
 import threading
-from typing import Callable
+from collections.abc import Callable
 
 from ..input.backend import InputSink
 from ..models import Macro, MacroAction
@@ -43,9 +43,9 @@ class RunHandle:
         macro: Macro,
         sink: InputSink,
         iterations: int | None,
-        on_finished: Callable[["RunHandle"], None],
-        on_step: Callable[["RunHandle", int], None] | None = None,
-        on_error: Callable[["RunHandle", Exception], None] | None = None,
+        on_finished: Callable[[RunHandle], None],
+        on_step: Callable[[RunHandle, int], None] | None = None,
+        on_error: Callable[[RunHandle, Exception], None] | None = None,
     ) -> None:
         self.macro = macro
         self.key = macro.id

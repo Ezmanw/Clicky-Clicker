@@ -6,7 +6,7 @@ which input, what should it do, and how should activating it behave.
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from gi.repository import Adw, Gtk
 
@@ -259,9 +259,12 @@ class BindingEditorDialog(Adw.Dialog):
         if self._updating:
             return
         self._binding.kind = _KIND_LABELS[combo.get_selected()][0]
-        if self._binding.kind is BindingKind.RUN_MACRO and not self._binding.macro_id:
-            if self._macros:
-                self._binding.macro_id = self._macros[0].id
+        if (
+            self._binding.kind is BindingKind.RUN_MACRO
+            and not self._binding.macro_id
+            and self._macros
+        ):
+            self._binding.macro_id = self._macros[0].id
         self._render()
 
     def _on_macro_changed(self, combo: Adw.ComboRow, _param: object) -> None:

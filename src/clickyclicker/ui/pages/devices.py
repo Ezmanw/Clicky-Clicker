@@ -9,7 +9,7 @@ fix it, is more useful than any error dialog raised after the fact.
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from gi.repository import Adw, Gdk, GLib, Gtk
 
@@ -202,7 +202,9 @@ class DevicesPage(Adw.NavigationPage):
         if not succeeded:
             self._on_toast("Could not control the service. Is systemd available?")
             return
-        self._on_toast("Restarting the service…" if status.connected else "Starting the service…")
+        self._on_toast(
+            "Restarting the service…" if status.connected else "Starting the service…"
+        )
         # Give systemd a moment to bring it up before reporting the new state.
         GLib.timeout_add(1200, self._refresh_once)
 

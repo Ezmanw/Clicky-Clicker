@@ -100,7 +100,7 @@ class Binding:
             return f"Runs “{macro_name}”"
         return "No macro chosen"
 
-    def duplicate(self) -> "Binding":
+    def duplicate(self) -> Binding:
         """A copy with a new identity."""
         return Binding(
             input=self.input,
@@ -146,7 +146,7 @@ class Binding:
         return data
 
     @classmethod
-    def from_dict(cls, data: Any) -> "Binding":
+    def from_dict(cls, data: Any) -> Binding:
         """Rebuild from disk.
 
         :raises ValueError: if *data* is not a binding object.
@@ -194,7 +194,11 @@ class BindingSet:
 
     def for_macro(self, macro_id: str) -> list[Binding]:
         """Every binding that runs the given macro."""
-        return [b for b in self.bindings if b.kind is BindingKind.RUN_MACRO and b.macro_id == macro_id]
+        return [
+            b
+            for b in self.bindings
+            if b.kind is BindingKind.RUN_MACRO and b.macro_id == macro_id
+        ]
 
     def conflicts(self) -> dict[str, list[Binding]]:
         """Enabled bindings that claim the same input on the same device.
@@ -217,7 +221,7 @@ class BindingSet:
         return {"version": 1, "bindings": [b.to_dict() for b in self.bindings]}
 
     @classmethod
-    def from_dict(cls, data: Any) -> "BindingSet":
+    def from_dict(cls, data: Any) -> BindingSet:
         bindings: list[Binding] = []
         if isinstance(data, dict):
             raw = data.get("bindings")

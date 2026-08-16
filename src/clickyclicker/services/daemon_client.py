@@ -79,7 +79,7 @@ class DaemonClient:
             connection = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             connection.settimeout(_CONNECT_TIMEOUT)
             connection.connect(str(self._path))
-        except (OSError, socket.timeout):
+        except (OSError, TimeoutError):
             return None
 
         try:
@@ -91,7 +91,7 @@ class DaemonClient:
                 if not line:
                     return None
                 return decode(line.rstrip(b"\n"))
-        except (OSError, socket.timeout, ValueError) as exc:
+        except (OSError, TimeoutError, ValueError) as exc:
             log.debug("daemon request %s failed: %s", command.value, exc)
             return None
 
@@ -114,7 +114,9 @@ class DaemonClient:
             return DaemonStatus(connected=True)
 
         running = payload.get("running")
-        entries = tuple(item for item in running if isinstance(item, dict)) if isinstance(running, list) else ()
+        entries: tuple[dict[str, str], ...] = ()
+        if isinstance(running, list):
+            entries = tuple(item for item in running if isinstance(item, dict))
 
         return DaemonStatus(
             connected=True,

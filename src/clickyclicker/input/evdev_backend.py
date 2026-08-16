@@ -22,6 +22,7 @@ simply observed, which is both cheaper and safer.
 
 from __future__ import annotations
 
+import contextlib
 import errno
 import logging
 import os
@@ -29,7 +30,8 @@ import re
 import selectors
 import threading
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from ..models import keys
 from .backend import DeviceInfo, InputEvent, InputSource, KeyState
@@ -220,10 +222,8 @@ class EvdevSource(InputSource):
 
     def _wake(self) -> None:
         if self._wake_w >= 0:
-            try:
+            with contextlib.suppress(OSError):
                 os.write(self._wake_w, b"\x01")
-            except OSError:
-                pass
 
     # --- Device management ----------------------------------------------
 
@@ -277,10 +277,8 @@ class EvdevSource(InputSource):
         open_device = self._open.pop(path, None)
         if open_device is None:
             return
-        try:
+        with contextlib.suppress(KeyError, OSError, ValueError):
             selector.unregister(open_device.device.fileno())
-        except (KeyError, OSError, ValueError):
-            pass
         open_device.release(self._evdev)
         log.debug("stopped watching %s", path)
 
@@ -301,10 +299,8 @@ class EvdevSource(InputSource):
                 open_device.suppressed = set()
                 return
         elif not wanted and open_device.grabbed:
-            try:
+            with contextlib.suppress(OSError):
                 open_device.device.ungrab()
-            except OSError:
-                pass
             open_device.grabbed = False
             open_device.stop_forwarding()
 
@@ -354,10 +350,8 @@ class EvdevSource(InputSource):
         selector.close()
         for fd in (self._wake_r, self._wake_w):
             if fd >= 0:
-                try:
+                with contextlib.suppress(OSError):
                     os.close(fd)
-                except OSError:
-                    pass
         self._wake_r = self._wake_w = -1
 
 
@@ -408,16 +402,12 @@ class _OpenDevice:
         """Ungrab, stop forwarding and close."""
         del evdev
         if self.grabbed:
-            try:
+            with contextlib.suppress(OSError):
                 self.device.ungrab()
-            except OSError:
-                pass
             self.grabbed = False
         self.stop_forwarding()
-        try:
+        with contextlib.suppress(OSError):
             self.device.close()
-        except OSError:
-            pass
 
 
 def _drain(fd: int) -> None:

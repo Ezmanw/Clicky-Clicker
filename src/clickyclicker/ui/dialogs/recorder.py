@@ -18,7 +18,7 @@ so the recording plays back at the speed it was performed.
 from __future__ import annotations
 
 import time
-from typing import Callable
+from collections.abc import Callable
 
 from gi.repository import Adw, Gdk, GLib, Gtk
 

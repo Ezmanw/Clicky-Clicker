@@ -13,9 +13,10 @@ branch in :mod:`clickyclicker.macros.executor` -- no UI changes required.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from . import keys
 
@@ -404,7 +405,7 @@ class MacroAction:
     uid: str = field(default_factory=lambda: uuid.uuid4().hex, compare=False)
 
     @classmethod
-    def create(cls, action_type: ActionType, **overrides: Any) -> "MacroAction":
+    def create(cls, action_type: ActionType, **overrides: Any) -> MacroAction:
         """Build an action of *action_type* with default parameters."""
         spec = spec_for(action_type)
         params = spec.defaults()
@@ -423,7 +424,7 @@ class MacroAction:
         except Exception:  # noqa: BLE001 - a malformed preset must not break the list
             return self.spec.label
 
-    def duplicate(self) -> "MacroAction":
+    def duplicate(self) -> MacroAction:
         """A copy with fresh identity, for the editor's Duplicate command."""
         return MacroAction(
             type=self.type,
@@ -439,7 +440,7 @@ class MacroAction:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "MacroAction":
+    def from_dict(cls, data: dict[str, Any]) -> MacroAction:
         """Rebuild from the on-disk representation.
 
         Unknown parameters are dropped and missing ones filled with defaults, so

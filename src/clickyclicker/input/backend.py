@@ -23,9 +23,9 @@ and why the README leads with the group setup.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Callable, Iterator
 
 __all__ = ["KeyState", "InputEvent", "DeviceInfo", "InputSource", "InputSink"]
 

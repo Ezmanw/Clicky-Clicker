@@ -14,8 +14,8 @@ library knows nothing about the interface.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Callable, Iterable
 
 from ..models import Binding, BindingKind, BindingSet, Macro, Settings
 from ..persistence import MacroStore
@@ -246,13 +246,12 @@ class MacroLibrary:
     def broken_bindings(self) -> list[Binding]:
         """Bindings whose macro no longer exists, or which are incomplete."""
         known = {macro.id for macro in self._macros}
-        broken: list[Binding] = []
-        for binding in self._bindings.bindings:
-            if binding.kind is BindingKind.RUN_MACRO and binding.macro_id not in known:
-                broken.append(binding)
-            elif binding.kind is BindingKind.REMAP and not binding.output:
-                broken.append(binding)
-        return broken
+        return [
+            binding
+            for binding in self._bindings.bindings
+            if (binding.kind is BindingKind.RUN_MACRO and binding.macro_id not in known)
+            or (binding.kind is BindingKind.REMAP and not binding.output)
+        ]
 
     # --- Settings commands ----------------------------------------------
 

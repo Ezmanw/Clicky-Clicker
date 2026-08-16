@@ -13,7 +13,7 @@ window costs nothing.
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from gi.repository import Adw, Gio, GLib, Gtk
 

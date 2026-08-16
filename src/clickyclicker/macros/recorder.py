@@ -14,8 +14,8 @@ instance -- which condensing would silently destroy.
 from __future__ import annotations
 
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
 
 from ..input.backend import InputEvent, KeyState
 from ..models import MacroAction

@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import logging
 import threading
-from typing import Callable
+from collections.abc import Callable
 
 from ..input import create_sink, create_source
 from ..input.backend import InputEvent, InputSource, KeyState
@@ -311,9 +311,8 @@ class Engine:
         elif mode is TriggerMode.TOGGLE:
             if pressed:
                 executor.toggle(macro, key=run_key)
-        elif mode is TriggerMode.ONE_SHOT:
-            if pressed and not executor.is_running(run_key):
-                executor.start(macro, key=run_key)
+        elif mode is TriggerMode.ONE_SHOT and pressed and not executor.is_running(run_key):
+            executor.start(macro, key=run_key)
 
     def _apply_remap(self, binding: Binding, pressed: bool, executor: MacroExecutor) -> None:
         """Emit the replacement keys for a remapped input.

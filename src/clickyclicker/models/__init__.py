@@ -6,7 +6,15 @@ persistence layer and the test suite, and keeping them dependency-free is what
 lets the daemon run without a display and the tests run without hardware.
 """
 
-from .action import ACTION_SPECS, ActionSpec, ActionType, MacroAction, ParamKind, ParamSpec, spec_for
+from .action import (
+    ACTION_SPECS,
+    ActionSpec,
+    ActionType,
+    MacroAction,
+    ParamKind,
+    ParamSpec,
+    spec_for,
+)
 from .binding import Binding, BindingKind, BindingSet
 from .macro import (
     PLAYBACK_LABELS,

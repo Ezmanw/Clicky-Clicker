@@ -19,7 +19,7 @@ dismiss.
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -233,7 +233,9 @@ class MacroEditorPage(Adw.NavigationPage):
         self._gap_row = Adw.SpinRow(
             title="Repeat Gap",
             subtitle="Delay between repeats, separate from any Wait action inside the macro",
-            adjustment=Gtk.Adjustment(lower=0, upper=3_600_000, step_increment=1, page_increment=50),
+            adjustment=Gtk.Adjustment(
+                lower=0, upper=3_600_000, step_increment=1, page_increment=50
+            ),
         )
         self._gap_row.connect("notify::value", self._on_gap_changed)
         playback.add(self._gap_row)

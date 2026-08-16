@@ -8,6 +8,7 @@ event loop, and it keeps the daemon free of any GLib dependency.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import socket
@@ -35,7 +36,7 @@ class ControlServer:
         self._server: socket.socket | None = None
         self._thread: threading.Thread | None = None
         self._running = False
-        self.on_shutdown_requested: "threading.Event" = threading.Event()
+        self.on_shutdown_requested: threading.Event = threading.Event()
 
     # --- Lifecycle ------------------------------------------------------
 
@@ -57,7 +58,7 @@ class ControlServer:
                 server.bind(str(self._path))
             finally:
                 os.umask(old_umask)
-            os.chmod(self._path, 0o600)
+            self._path.chmod(0o600)
             server.listen(_BACKLOG)
         except OSError:
             server.close()
@@ -83,7 +84,7 @@ class ControlServer:
         probe.settimeout(0.5)
         try:
             probe.connect(str(self._path))
-        except (ConnectionRefusedError, FileNotFoundError, socket.timeout, OSError):
+        except (ConnectionRefusedError, FileNotFoundError, TimeoutError, OSError):
             self._path.unlink(missing_ok=True)
             return
         finally:
@@ -95,10 +96,8 @@ class ControlServer:
         self._running = False
         server, self._server = self._server, None
         if server is not None:
-            try:
+            with contextlib.suppress(OSError):
                 server.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass
             server.close()
         self._path.unlink(missing_ok=True)
         if self._thread is not None:
@@ -139,7 +138,7 @@ class ControlServer:
                         continue
                     stream.write(encode(self._dispatch(request)))
                     stream.flush()
-        except (OSError, socket.timeout):
+        except (OSError, TimeoutError):
             return
 
     # --- Dispatch -------------------------------------------------------

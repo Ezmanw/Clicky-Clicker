@@ -15,7 +15,7 @@ can express, including buttons a mouse may not have but a preset might use.
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from gi.repository import Adw, Gdk, GLib, Gtk
 

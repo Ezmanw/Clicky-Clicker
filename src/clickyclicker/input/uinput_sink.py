@@ -24,7 +24,8 @@ from __future__ import annotations
 
 import logging
 import threading
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 from ..models import keys
 from .backend import InputSink
@@ -145,8 +146,8 @@ class UinputSink(InputSink):
         capabilities = {
             ecodes.EV_KEY: [ecodes.BTN_LEFT, ecodes.BTN_RIGHT, ecodes.BTN_MIDDLE],
             ecodes.EV_ABS: [
-                (ecodes.ABS_X, AbsInfo(value=0, min=0, max=ABS_RANGE, fuzz=0, flat=0, resolution=0)),
-                (ecodes.ABS_Y, AbsInfo(value=0, min=0, max=ABS_RANGE, fuzz=0, flat=0, resolution=0)),
+                (ecodes.ABS_X, _abs_axis(AbsInfo)),
+                (ecodes.ABS_Y, _abs_axis(AbsInfo)),
             ],
         }
         common = {
@@ -183,7 +184,7 @@ class UinputSink(InputSink):
                     setattr(self, attr, None)
             self._held.clear()
 
-    def __enter__(self) -> "UinputSink":
+    def __enter__(self) -> UinputSink:
         self.open()
         return self
 
@@ -296,6 +297,11 @@ class UinputSink(InputSink):
         """The kernel symbols currently held down by this sink."""
         with self._lock:
             return iter(sorted(self._held))
+
+
+def _abs_axis(AbsInfo: Any) -> Any:  # noqa: N803 - matches python-evdev's own name
+    """Describe one axis of the absolute pointer's logical grid."""
+    return AbsInfo(value=0, min=0, max=ABS_RANGE, fuzz=0, flat=0, resolution=0)
 
 
 def _codes_with_prefix(prefix: str, maximum: int) -> list[int]:

@@ -55,7 +55,10 @@ def parse(header: Path) -> list[tuple[str, int]]:
 
 def main() -> int:
     if not HEADER.exists():
-        print(f"error: {HEADER} not found; install your distribution's kernel headers", file=sys.stderr)
+        print(
+            f"error: {HEADER} not found; install your kernel headers package",
+            file=sys.stderr,
+        )
         return 1
 
     entries = parse(HEADER)

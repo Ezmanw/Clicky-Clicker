@@ -114,7 +114,7 @@ class PlaybackConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: Any) -> "PlaybackConfig":
+    def from_dict(cls, data: Any) -> PlaybackConfig:
         config = cls()
         if isinstance(data, dict):
             try:
@@ -137,7 +137,7 @@ class TriggerConfig:
         return {"mode": self.mode.value}
 
     @classmethod
-    def from_dict(cls, data: Any) -> "TriggerConfig":
+    def from_dict(cls, data: Any) -> TriggerConfig:
         if isinstance(data, dict):
             try:
                 return cls(mode=TriggerMode(data.get("mode", TriggerMode.ON_PRESS.value)))
@@ -241,7 +241,7 @@ class Macro:
             total += _as_int(action.params.get("hold_ms"), 0)
         return total
 
-    def duplicate(self, name: str | None = None) -> "Macro":
+    def duplicate(self, name: str | None = None) -> Macro:
         """A full copy with a new identity."""
         return Macro(
             name=name or f"{self.name} (Copy)",
@@ -270,7 +270,7 @@ class Macro:
         }
 
     @classmethod
-    def from_dict(cls, data: Any, *, new_id: bool = False) -> "Macro":
+    def from_dict(cls, data: Any, *, new_id: bool = False) -> Macro:
         """Rebuild from the on-disk preset format.
 
         Malformed individual actions are skipped rather than failing the whole

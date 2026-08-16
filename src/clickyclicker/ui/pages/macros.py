@@ -7,8 +7,8 @@ importing is reading one in.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from gi.repository import Adw, Gio, GLib, Gtk
 
@@ -344,5 +344,8 @@ class MacrosPage(Adw.NavigationPage):
 
 def _safe_filename(name: str) -> str:
     """Turn a macro name into something safe to suggest as a filename."""
-    cleaned = "".join(character if character.isalnum() or character in " -_" else "-" for character in name)
+    cleaned = "".join(
+        character if character.isalnum() or character in " -_" else "-"
+        for character in name
+    )
     return cleaned.strip().replace(" ", "-").lower() or "preset"

@@ -82,7 +82,7 @@ class Settings:
         }
 
     @classmethod
-    def from_dict(cls, data: Any) -> "Settings":
+    def from_dict(cls, data: Any) -> Settings:
         """Rebuild from disk, falling back to defaults for anything missing."""
         settings = cls()
         if not isinstance(data, dict):
@@ -99,7 +99,9 @@ class Settings:
         settings.recording_capture_delays = _as_bool(
             data.get("recording_capture_delays"), settings.recording_capture_delays
         )
-        settings.default_gap_ms = max(0, _as_int(data.get("default_gap_ms"), settings.default_gap_ms))
+        settings.default_gap_ms = max(
+            0, _as_int(data.get("default_gap_ms"), settings.default_gap_ms)
+        )
         settings.recording_min_delay_ms = max(
             0, _as_int(data.get("recording_min_delay_ms"), settings.recording_min_delay_ms)
         )
