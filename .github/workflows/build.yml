@@ -49,7 +49,7 @@ jobs:
         run: ${{ matrix.install }}
 
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configure
         run: meson setup _build --prefix=/usr
@@ -74,7 +74,7 @@ jobs:
 
       - name: Upload Meson logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: meson-logs-${{ strategy.job-index }}
           path: _build/meson-logs/
@@ -97,7 +97,7 @@ jobs:
           pip3 install --break-system-packages --no-cache-dir ruff
 
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Byte-compile every module
         run: python3 -m compileall -q src/clickyclicker
