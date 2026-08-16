@@ -19,6 +19,7 @@ import os
 import signal
 import sys
 import threading
+from collections.abc import Callable
 
 from ..input.errors import InputError
 from ..persistence import paths
@@ -144,9 +145,10 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _watch_shutdown(server: ControlServer, request_stop: "object") -> None:
+def _watch_shutdown(server: ControlServer, request_stop: Callable[[], None]) -> None:
+    """Block until the control socket receives a shutdown command."""
     server.on_shutdown_requested.wait()
-    request_stop()  # type: ignore[operator]
+    request_stop()
 
 
 if __name__ == "__main__":

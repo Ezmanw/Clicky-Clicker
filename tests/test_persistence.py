@@ -8,6 +8,7 @@ import pytest
 
 from clickyclicker.models import Binding, BindingKind, BindingSet, Macro, MacroAction
 from clickyclicker.models.action import ActionType
+from clickyclicker.persistence import paths
 from clickyclicker.persistence.store import read_json, write_json
 from clickyclicker.services.ipc import Command, decode, encode, error, ok
 
@@ -151,8 +152,6 @@ class TestBindingPersistence:
 class TestExamplePresets:
     def test_bundled_presets_all_parse(self):
         """Every shipped preset must load, or a new user's first run is broken."""
-        from clickyclicker.persistence import paths
-
         directories = [d for d in paths.system_preset_dirs() if d.is_dir()]
         assert directories, "the bundled presets should be findable from a checkout"
 

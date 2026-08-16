@@ -14,6 +14,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from clickyclicker.input.backend import InputSink  # noqa: E402
+from clickyclicker.persistence import MacroStore  # noqa: E402
 
 
 class RecordingSink(InputSink):
@@ -66,7 +67,5 @@ def sink() -> RecordingSink:
 @pytest.fixture
 def store(tmp_path, monkeypatch):
     """A MacroStore rooted in a temporary directory."""
-    from clickyclicker.persistence import MacroStore
-
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     return MacroStore()

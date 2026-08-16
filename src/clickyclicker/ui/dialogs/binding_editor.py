@@ -14,8 +14,8 @@ from ...models import Binding, BindingKind, TriggerMode
 from ...models.keys import format_combo, label_for
 from ...models.macro import TRIGGER_LABELS
 from ...services import MacroLibrary
-from .combo_editor import edit_combo
 from ..widgets.rows import plain
+from .combo_editor import edit_combo
 from .key_chooser import choose_key
 
 __all__ = ["BindingEditorDialog", "edit_binding"]
