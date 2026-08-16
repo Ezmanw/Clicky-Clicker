@@ -586,10 +586,15 @@ anywhere, including in a container.
 checked in, so neither the build nor the runtime depends on them:
 
 ```bash
-./tools/gen_keycodes.py
+./tools/gen_keycodes.py           # regenerate from this machine's headers
+./tools/gen_keycodes.py --check   # verify the checked-in table
 ```
 
-CI verifies the checked-in copy is current.
+CI runs `--check` rather than comparing byte-for-byte, because the table is
+generated from whatever kernel headers are installed and those differ between
+distributions. A table generated on a newer kernel legitimately carries codes an
+older one has never heard of; what `--check` asserts is that the table never
+*contradicts* the headers it is compared against.
 
 ### Adding a new macro action
 

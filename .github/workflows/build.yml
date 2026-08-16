@@ -92,7 +92,7 @@ jobs:
           apt-get install -y --no-install-recommends \
             python3 python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 \
             python3-evdev python3-pytest python3-pip \
-            linux-libc-dev diffutils
+            linux-libc-dev
           # ruff is not packaged for Ubuntu 24.04, so it comes from PyPI.
           pip3 install --break-system-packages --no-cache-dir ruff
 
@@ -110,9 +110,9 @@ jobs:
         # no hardware, so they run fully in a container.
         run: python3 -m pytest tests -v
 
-      - name: Verify the generated keycode table is up to date
-        run: |
-          cp src/clickyclicker/models/keycodes.py /tmp/keycodes.before
-          python3 tools/gen_keycodes.py
-          diff -u /tmp/keycodes.before src/clickyclicker/models/keycodes.py \
-            && echo "keycode table is current"
+      - name: Verify the generated keycode table
+        # Not a byte-for-byte comparison: the container's kernel headers are
+        # older than a contributor's are likely to be, and a table generated on
+        # a newer kernel legitimately contains extra symbols. --check asserts
+        # the invariant that matters -- the table never contradicts the headers.
+        run: python3 tools/gen_keycodes.py --check

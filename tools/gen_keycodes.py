@@ -5,7 +5,8 @@ The generated module is checked into the repository so that neither the build
 nor the runtime depends on ``linux/input-event-codes.h`` being installed.  Run
 this script by hand when targeting a newer kernel::
 
-    ./tools/gen_keycodes.py
+    ./tools/gen_keycodes.py           # regenerate the table
+    ./tools/gen_keycodes.py --check   # verify it against this machine's headers
 
 The header ships with the ``linux-libc-dev`` package on Debian/Ubuntu and with
 ``kernel-headers`` on Fedora/Arch.
@@ -16,6 +17,10 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+
+from clickyclicker.models.keycodes import CODES  # noqa: E402
 
 HEADER = Path("/usr/include/linux/input-event-codes.h")
 OUTPUT = Path(__file__).resolve().parent.parent / "src" / "clickyclicker" / "models" / "keycodes.py"
@@ -53,7 +58,59 @@ def parse(header: Path) -> list[tuple[str, int]]:
     return entries
 
 
+def check(entries: list[tuple[str, int]]) -> int:
+    """Verify the checked-in table against the headers on this machine.
+
+    Deliberately *not* a byte-for-byte comparison against freshly generated
+    output.  The table is generated from whatever kernel headers happen to be
+    installed, and those differ between distributions and kernel versions -- a
+    table generated on a newer kernel legitimately contains codes an older one
+    has never heard of.  Requiring equality would make the check fail on every
+    machine except the one the table was last generated on.
+
+    The invariant that actually matters is that the two never *disagree*: every
+    symbol the local headers define must appear in the table with the same
+    numeric value.  Extra symbols are fine and are reported for information.
+    """
+    checked_in = dict(CODES)
+    missing: list[str] = []
+    conflicting: list[str] = []
+
+    for name, code in entries:
+        if name not in checked_in:
+            missing.append(f"{name} = {code}")
+        elif checked_in[name] != code:
+            conflicting.append(f"{name}: table says {checked_in[name]}, headers say {code}")
+
+    if conflicting:
+        print("error: the checked-in table contradicts the kernel headers:", file=sys.stderr)
+        for line in conflicting:
+            print(f"  {line}", file=sys.stderr)
+        print(f"\nRegenerate it with:  {sys.argv[0]}", file=sys.stderr)
+        return 1
+
+    if missing:
+        print(
+            f"error: {len(missing)} symbol(s) in {HEADER} are absent from the table:",
+            file=sys.stderr,
+        )
+        for line in missing[:20]:
+            print(f"  {line}", file=sys.stderr)
+        if len(missing) > 20:
+            print(f"  ... and {len(missing) - 20} more", file=sys.stderr)
+        print(f"\nRegenerate it with:  {sys.argv[0]}", file=sys.stderr)
+        return 1
+
+    extra = len(checked_in) - len(entries)
+    print(f"keycode table is consistent with {HEADER} ({len(entries)} symbols checked)")
+    if extra > 0:
+        print(f"  it also carries {extra} symbol(s) from a newer kernel, which is expected")
+    return 0
+
+
 def main() -> int:
+    verify_only = "--check" in sys.argv[1:]
+
     if not HEADER.exists():
         print(
             f"error: {HEADER} not found; install your kernel headers package",
@@ -65,6 +122,9 @@ def main() -> int:
     if not entries:
         print(f"error: no KEY_/BTN_ defines parsed from {HEADER}", file=sys.stderr)
         return 1
+
+    if verify_only:
+        return check(entries)
 
     # A numeric code can have several spellings (BTN_LEFT/BTN_TOUCH share 0x110
     # only across device types, but BTN_A/BTN_SOUTH genuinely alias).  The first
