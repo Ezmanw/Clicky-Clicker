@@ -1,0 +1,13 @@
+option(
+  'systemduserunitdir',
+  type: 'string',
+  value: '',
+  description: 'Directory for the systemd user unit (empty: ask pkg-config, falling back to $prefix/lib/systemd/user)',
+)
+
+option(
+  'install-udev-rules',
+  type: 'boolean',
+  value: false,
+  description: 'Install the udev rule granting the "input" group write access to /dev/uinput. Off by default because it only makes sense for a system-wide install as root.',
+)

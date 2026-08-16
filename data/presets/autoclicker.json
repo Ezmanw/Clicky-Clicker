@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "id": "ffbbbdfd51934aa9836b92d23a9de2ec",
+  "name": "Autoclicker",
+  "description": "Clicks the left mouse button repeatedly for as long as the trigger is held.",
+  "playback": {
+    "mode": "while_held",
+    "repeat_count": 5,
+    "gap_ms": 30
+  },
+  "trigger": {
+    "mode": "on_press"
+  },
+  "actions": [
+    {
+      "type": "button_click",
+      "params": {
+        "button": "BTN_LEFT",
+        "hold_ms": 20
+      }
+    }
+  ]
+}

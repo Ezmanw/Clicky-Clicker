@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <!--
+    Only presentational state lives here. Everything that affects behaviour is
+    in settings.json instead, because the daemon reads it too and must not
+    depend on a dconf session bus being available.
+  -->
+  <schema id="io.github.ezmanw.ClickyClicker" path="/io/github/ezmanw/ClickyClicker/">
+    <key name="color-scheme" type="s">
+      <choices>
+        <choice value="default"/>
+        <choice value="light"/>
+        <choice value="dark"/>
+      </choices>
+      <default>"default"</default>
+      <summary>Colour scheme</summary>
+      <description>
+        Whether to follow the system colour scheme or force light or dark.
+        Applied through AdwStyleManager.
+      </description>
+    </key>
+
+    <key name="window-width" type="i">
+      <default>1080</default>
+      <summary>Window width</summary>
+      <description>The width of the main window, in logical pixels.</description>
+    </key>
+
+    <key name="window-height" type="i">
+      <default>760</default>
+      <summary>Window height</summary>
+      <description>The height of the main window, in logical pixels.</description>
+    </key>
+
+    <key name="window-maximized" type="b">
+      <default>false</default>
+      <summary>Window maximised</summary>
+      <description>Whether the main window was maximised when it was last closed.</description>
+    </key>
+  </schema>
+</schemalist>

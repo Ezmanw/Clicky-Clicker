@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "id": "a12ff7ba3ab84b13a19bf7ca55b9fc22",
+  "name": "Click at Two Points",
+  "description": "Moves to a fixed screen position, clicks, then does the same at a second position. Adjust the coordinates to suit your screen.",
+  "playback": {
+    "mode": "repeat_count",
+    "repeat_count": 10,
+    "gap_ms": 100
+  },
+  "trigger": {
+    "mode": "on_press"
+  },
+  "actions": [
+    {
+      "type": "mouse_click_at",
+      "params": {
+        "button": "BTN_LEFT",
+        "x": 500,
+        "y": 300,
+        "hold_ms": 20
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "duration_ms": 200
+      }
+    },
+    {
+      "type": "mouse_click_at",
+      "params": {
+        "button": "BTN_LEFT",
+        "x": 900,
+        "y": 600,
+        "hold_ms": 20
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "duration_ms": 200
+      }
+    }
+  ]
+}

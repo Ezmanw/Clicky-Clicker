@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "id": "306b31d80da6485bab69a763d43fac46",
+  "name": "Scroll Down Slowly",
+  "description": "Turns the scroll wheel one detent at a time, for reading long pages hands-free.",
+  "playback": {
+    "mode": "toggle",
+    "repeat_count": 5,
+    "gap_ms": 0
+  },
+  "trigger": {
+    "mode": "on_press"
+  },
+  "actions": [
+    {
+      "type": "scroll",
+      "params": {
+        "amount": -1,
+        "horizontal": false
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "duration_ms": 400
+      }
+    }
+  ]
+}

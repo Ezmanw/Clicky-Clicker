@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=Clicky Clicker
+GenericName=Input Remapper
+Comment=Remap keys and mouse buttons, and build macros visually
+Exec=clicky-clicker
+# A stock icon from the system theme; the application ships no artwork.
+Icon=input-keyboard
+Terminal=false
+Type=Application
+Categories=Utility;Settings;HardwareSettings;
+Keywords=macro;autoclicker;remap;keyboard;mouse;input;automation;hotkey;
+StartupNotify=true
+X-GNOME-UsesNotifications=true

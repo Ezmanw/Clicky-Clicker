@@ -1,0 +1,56 @@
+# Tooling configuration only. The project is built and installed with Meson;
+# this file exists so ruff and pytest behave identically for every contributor
+# and in continuous integration.
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests", "tools"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "W",    # pycodestyle warnings
+    "I",    # import ordering
+    "UP",   # pyupgrade
+    "B",    # bugbear
+    "C4",   # comprehensions
+    "SIM",  # simplify
+    "RET",  # return style
+    "PTH",  # prefer pathlib
+    "ARG",  # unused arguments
+    "SLF",  # private member access
+    "BLE",  # blind except
+    "PLC",  # pylint conventions
+    "PLE",  # pylint errors
+    "PLW",  # pylint warnings
+]
+
+ignore = [
+    # GTK signal handlers have fixed signatures, so unused parameters are
+    # unavoidable and are already named with a leading underscore.
+    "ARG001",
+    "ARG002",
+    # The interface deliberately catches broad exceptions at a few boundaries
+    # (observer callbacks, teardown paths) so one failure cannot take down the
+    # whole window. Those sites carry a noqa with the reason.
+    "BLE001",
+    # Assigning before returning is often clearer with a descriptive name.
+    "RET504",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Generated from the kernel headers; not written by hand.
+"src/clickyclicker/models/keycodes.py" = ["E501"]
+# Tests reach into internals deliberately, and long descriptive names are fine.
+"tests/*" = ["SLF001", "E501", "ARG002"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["clickyclicker"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra --strict-markers"
+filterwarnings = ["error::DeprecationWarning:clickyclicker.*"]

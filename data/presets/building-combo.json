@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "id": "05b4958fdaee48fd8e8882c76c6d0c94",
+  "name": "Building Combo",
+  "description": "The example from the documentation: tap E, click, then reposition the pointer. Repeats for as long as the trigger is held.",
+  "playback": {
+    "mode": "while_held",
+    "repeat_count": 5,
+    "gap_ms": 5
+  },
+  "trigger": {
+    "mode": "on_press"
+  },
+  "actions": [
+    {
+      "type": "key_press",
+      "params": {
+        "key": "KEY_E"
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "duration_ms": 1
+      }
+    },
+    {
+      "type": "key_release",
+      "params": {
+        "key": "KEY_E"
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "duration_ms": 1
+      }
+    },
+    {
+      "type": "button_click",
+      "params": {
+        "button": "BTN_LEFT",
+        "hold_ms": 20
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "duration_ms": 20
+      }
+    },
+    {
+      "type": "mouse_move",
+      "params": {
+        "x": 500,
+        "y": 300
+      }
+    }
+  ]
+}

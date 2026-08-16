@@ -1,0 +1,34 @@
+# Meson / Ninja
+/_build/
+/build/
+/builddir/
+*.o
+*.so
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+
+# Tooling caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Generated at configure time from the .in templates
+/data/*.desktop
+/data/*.metainfo.xml
+/data/*.service
+!/data/*.in

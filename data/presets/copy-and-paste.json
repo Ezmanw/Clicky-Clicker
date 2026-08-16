@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "id": "8a6c228b022d4fe787cd44e4002a6b7d",
+  "name": "Copy and Paste",
+  "description": "Sends Ctrl+C followed by Ctrl+V. A plain one-shot macro with no repetition.",
+  "playback": {
+    "mode": "once",
+    "repeat_count": 5,
+    "gap_ms": 0
+  },
+  "trigger": {
+    "mode": "on_press"
+  },
+  "actions": [
+    {
+      "type": "key_combo",
+      "params": {
+        "keys": [
+          "KEY_LEFTCTRL",
+          "KEY_C"
+        ],
+        "hold_ms": 30
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "duration_ms": 60
+      }
+    },
+    {
+      "type": "key_combo",
+      "params": {
+        "keys": [
+          "KEY_LEFTCTRL",
+          "KEY_V"
+        ],
+        "hold_ms": 30
+      }
+    }
+  ]
+}

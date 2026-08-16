@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "id": "66195f355c7445fa939e4c5fc029e784",
+  "name": "Rapid Fire E",
+  "description": "Taps the E key as fast as is practical while the trigger is held.",
+  "playback": {
+    "mode": "while_held",
+    "repeat_count": 5,
+    "gap_ms": 5
+  },
+  "trigger": {
+    "mode": "on_press"
+  },
+  "actions": [
+    {
+      "type": "key_press",
+      "params": {
+        "key": "KEY_E"
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "duration_ms": 1
+      }
+    },
+    {
+      "type": "key_release",
+      "params": {
+        "key": "KEY_E"
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "duration_ms": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+#!@PYTHON@
+"""Launcher for the Clicky Clicker interface."""
+
+import os
+import sys
+
+sys.path.insert(1, '@MODULEDIR@')
+os.environ.setdefault('CLICKY_CLICKER_PKGDATADIR', '@PKGDATADIR@')
+
+from clickyclicker.application import main
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))

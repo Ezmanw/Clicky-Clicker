@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>@APP_ID@</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <name>Clicky Clicker</name>
+  <summary>Remap inputs and build macros visually</summary>
+
+  <description>
+    <p>
+      Clicky Clicker is an input remapper and macro editor built for Wayland
+      desktops such as GNOME and COSMIC. It reads input devices and injects
+      events below the display server, so mappings work in every application
+      without needing cooperation from the compositor.
+    </p>
+    <p>Macros are built visually, never by typing a scripting language:</p>
+    <ul>
+      <li>Press, release, tap and hold any key, and send key combinations</li>
+      <li>Click, press and release any mouse button, including side buttons</li>
+      <li>Move the pointer to an absolute position, or click at one</li>
+      <li>Scroll, and wait for a precise number of milliseconds</li>
+      <li>Record a sequence and edit the captured timing afterwards</li>
+    </ul>
+    <p>
+      Each macro chooses how it repeats — once, a set number of times, forever,
+      while a button is held, or toggled on and off — with a configurable gap
+      between repeats. A global emergency-stop shortcut halts everything and
+      releases any held keys.
+    </p>
+    <p>
+      A background service applies your mappings when the window is closed, and
+      can start automatically at login.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">@APP_ID@.desktop</launchable>
+  <url type="homepage">https://github.com/Ezmanw/Clicky-Clicker</url>
+  <url type="bugtracker">https://github.com/Ezmanw/Clicky-Clicker/issues</url>
+
+  <developer id="io.github.ezmanw">
+    <name>Clicky Clicker contributors</name>
+  </developer>
+
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </supports>
+
+  <requires>
+    <display_length compare="ge">400</display_length>
+  </requires>
+
+  <content_rating type="oars-1.1"/>
+
+  <releases>
+    <release version="1.0.0" date="2026-08-16">
+      <description>
+        <p>First release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

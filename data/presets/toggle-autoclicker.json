@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "id": "d3735aad877144d7b890ae05f2394a5e",
+  "name": "Toggle Autoclicker",
+  "description": "Press once to start clicking, press again to stop. Useful when you do not want to hold a button down.",
+  "playback": {
+    "mode": "toggle",
+    "repeat_count": 5,
+    "gap_ms": 0
+  },
+  "trigger": {
+    "mode": "on_press"
+  },
+  "actions": [
+    {
+      "type": "button_click",
+      "params": {
+        "button": "BTN_LEFT",
+        "hold_ms": 15
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "duration_ms": 85
+      }
+    }
+  ]
+}

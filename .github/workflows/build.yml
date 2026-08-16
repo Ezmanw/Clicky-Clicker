@@ -1,0 +1,118 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build on ${{ matrix.container }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu 24.04 carries GTK 4.14 and libadwaita 1.5, which is exactly
+          # the minimum the project declares. Fedora 40 carries much newer
+          # versions, so between them they cover both ends of the range.
+          - container: ubuntu:24.04
+            install: |
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update
+              apt-get install -y --no-install-recommends \
+                meson ninja-build pkg-config \
+                libgtk-4-dev libadwaita-1-dev \
+                gir1.2-gtk-4.0 gir1.2-adw-1 \
+                python3 python3-gi python3-gi-cairo python3-evdev \
+                desktop-file-utils appstream-util \
+                libglib2.0-bin systemd
+          - container: fedora:40
+            install: |
+              dnf install -y \
+                meson ninja-build pkgconf-pkg-config \
+                gtk4-devel libadwaita-devel \
+                python3 python3-gobject python3-evdev \
+                desktop-file-utils libappstream-glib \
+                glib2-devel systemd-devel
+
+    container:
+      image: ${{ matrix.container }}
+
+    steps:
+      - name: Install build dependencies
+        run: ${{ matrix.install }}
+
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: meson setup _build --prefix=/usr
+
+      - name: Build
+        run: ninja -C _build
+
+      - name: Run data validation tests
+        run: meson test -C _build --print-errorlogs
+
+      - name: Install
+        run: ninja -C _build install
+
+      - name: Verify the installed launchers run
+        run: |
+          # --check exits non-zero when input devices are unreadable, which is
+          # always the case in a container. Reaching its report at all means the
+          # daemon started and imported every module successfully.
+          clicky-clicker-daemon --check || true
+          clicky-clicker-daemon --help > /dev/null
+          echo "launchers OK"
+
+      - name: Upload Meson logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meson-logs-${{ strategy.job-index }}
+          path: _build/meson-logs/
+
+  checks:
+    name: Static checks and unit tests
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:24.04
+    steps:
+      - name: Install dependencies
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            python3 python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 \
+            python3-evdev python3-pytest python3-pip \
+            linux-libc-dev diffutils
+          # ruff is not packaged for Ubuntu 24.04, so it comes from PyPI.
+          pip3 install --break-system-packages --no-cache-dir ruff
+
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Byte-compile every module
+        run: python3 -m compileall -q src/clickyclicker
+
+      - name: Lint
+        run: ruff check src tools tests
+
+      - name: Run the test suite
+        # The model, macro, persistence and IPC layers import no GTK and touch
+        # no hardware, so they run fully in a container.
+        run: python3 -m pytest tests -v
+
+      - name: Verify the generated keycode table is up to date
+        run: |
+          cp src/clickyclicker/models/keycodes.py /tmp/keycodes.before
+          python3 tools/gen_keycodes.py
+          diff -u /tmp/keycodes.before src/clickyclicker/models/keycodes.py \
+            && echo "keycode table is current"

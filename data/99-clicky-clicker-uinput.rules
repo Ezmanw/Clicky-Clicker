@@ -1,0 +1,18 @@
+# Allow members of the "input" group to create virtual input devices.
+#
+# Clicky Clicker injects keystrokes and pointer motion through /dev/uinput,
+# which is root-only by default. This grants the same group that already has
+# read access to /dev/input the matching write access to /dev/uinput, rather
+# than running any part of the application as root.
+#
+# static_node= applies the permissions even before the module has been loaded
+# on demand, so the first run after boot does not fail.
+#
+# Install with:
+#   sudo cp 99-clicky-clicker-uinput.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules && sudo udevadm trigger
+#
+# Many systems (including recent Pop!_OS and Fedora) already grant the logged-in
+# user access to /dev/uinput through a logind ACL, in which case this rule is
+# unnecessary. Check with:  getfacl /dev/uinput
+KERNEL=="uinput", SUBSYSTEM=="misc", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"
