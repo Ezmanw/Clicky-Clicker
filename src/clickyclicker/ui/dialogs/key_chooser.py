@@ -70,6 +70,13 @@ class KeyChooserDialog(Adw.Dialog):
 
         self._search = Gtk.SearchEntry(placeholder_text="Search keys and buttons")
         self._search.connect("search-changed", lambda *_: self._apply_filter())
+        # Capturing is armed the moment this dialog opens (see _on_mapped), since
+        # "press the input you want" is the primary way to use it. Clicking into
+        # the search box switches to browsing instead, so a keystroke meant as a
+        # search filter is never swallowed as a capture attempt.
+        search_focus = Gtk.EventControllerFocus()
+        search_focus.connect("enter", lambda *_: self._end_capture())
+        self._search.add_controller(search_focus)
 
         self._capture_button = Gtk.Button(
             child=Adw.ButtonContent(
@@ -119,6 +126,7 @@ class KeyChooserDialog(Adw.Dialog):
 
         self._build_rows()
         self._install_capture_controllers()
+        self.connect("map", lambda *_: self._on_capture_clicked(self._capture_button))
 
     # --- Construction ---------------------------------------------------
 

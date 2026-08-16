@@ -44,6 +44,17 @@ class DaemonStatus:
     bindings: int = 0
     running: tuple[dict[str, str], ...] = field(default_factory=tuple)
     last_error: str = ""
+    watched_devices: int | None = None
+    """How many input devices the daemon's own process can read.
+
+    ``None`` when the daemon did not report it (an older daemon, say).
+    Deliberately separate from the interface's own device-read check: that
+    check runs in this (usually freshly started) process and can report
+    success even while the daemon -- a different, possibly much longer-lived
+    process -- reads nothing at all, most commonly because it was started by
+    ``systemd --user`` before this account joined the ``input`` group and has
+    not been through a fresh login since.
+    """
 
     @property
     def running_count(self) -> int:
@@ -53,10 +64,22 @@ class DaemonStatus:
     def running_names(self) -> list[str]:
         return [entry.get("name", "Macro") for entry in self.running]
 
+    @property
+    def cannot_read_any_device(self) -> bool:
+        """Whether the daemon is up but is not watching any input device.
+
+        A live daemon with zero watched devices is always suspicious: some
+        keyboard or pointer exists on every real desktop session, so this
+        means every mapping is silently doing nothing.
+        """
+        return self.connected and self.watched_devices == 0
+
     def summary(self) -> str:
         """One line for the window's status banner."""
         if not self.connected:
             return "The background service is not running, so mappings are inactive."
+        if self.cannot_read_any_device:
+            return "The background service cannot read any input device — mappings are inactive."
         if not self.enabled:
             return "Mappings are turned off."
         if self.running:
@@ -118,6 +141,9 @@ class DaemonClient:
         if isinstance(running, list):
             entries = tuple(item for item in running if isinstance(item, dict))
 
+        watched = payload.get("watched_devices")
+        watched_devices = int(watched) if isinstance(watched, int) else None
+
         return DaemonStatus(
             connected=True,
             enabled=bool(payload.get("enabled", False)),
@@ -125,6 +151,7 @@ class DaemonClient:
             bindings=int(payload.get("bindings", 0) or 0),
             running=entries,
             last_error=str(payload.get("last_error") or ""),
+            watched_devices=watched_devices,
         )
 
     def reload(self) -> bool:

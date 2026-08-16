@@ -180,6 +180,7 @@ class Engine:
         """A snapshot for the interface's status display."""
         with self._lock:
             executor = self._executor
+            source = self._source
             enabled = self._settings.enabled
             macro_count = len(self._macros)
             binding_count = len(self._bindings)
@@ -194,12 +195,15 @@ class Engine:
                 if macro is not None:
                     running_macros.append({"id": macro.id, "name": macro.name})
 
+        watched_devices = getattr(source, "watched_device_count", None)
+
         return {
             "enabled": enabled,
             "macros": macro_count,
             "bindings": binding_count,
             "running": running_macros,
             "last_error": self.last_error,
+            "watched_devices": watched_devices,
         }
 
     def stop_all_macros(self) -> int:

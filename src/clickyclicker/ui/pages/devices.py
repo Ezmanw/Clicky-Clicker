@@ -37,7 +37,9 @@ class DevicesPage(Adw.NavigationPage):
             title="Requirements",
             description=(
                 "Reading input devices and creating a virtual device both need "
-                "permission from the system."
+                "permission from the system. This checks what this window's own "
+                "process can do, which can differ from the background service — "
+                "see below if the two disagree."
             ),
         )
         self._service_group = Adw.PreferencesGroup(
@@ -123,14 +125,13 @@ class DevicesPage(Adw.NavigationPage):
 
     def _render_service(self) -> None:
         status = self._library.daemon.status()
+        healthy = status.connected and not status.cannot_read_any_device
 
         row = plain(Adw.ActionRow(title="Service"))
         icon = Gtk.Image(
-            icon_name=(
-                "emblem-ok-symbolic" if status.connected else "dialog-warning-symbolic"
-            )
+            icon_name=("emblem-ok-symbolic" if healthy else "dialog-warning-symbolic")
         )
-        icon.add_css_class("success" if status.connected else "warning")
+        icon.add_css_class("success" if healthy else "warning")
         row.add_prefix(icon)
         row.set_subtitle(status.summary())
         row.set_subtitle_lines(0)
@@ -140,6 +141,22 @@ class DevicesPage(Adw.NavigationPage):
         button.connect("clicked", self._on_service_button, status)
         row.add_suffix(button)
         self._add(self._service_group, row)
+
+        if status.cannot_read_any_device:
+            remedy_row = plain(
+                Adw.ActionRow(),
+                title="This usually means the account was added to the “input” group "
+                "after the service last started",
+                subtitle=(
+                    "Log out and back in (or reboot), then restart the service. "
+                    "Restarting alone will not fix this: the service is relaunched by "
+                    "the same login session, which is still missing the new group."
+                ),
+            )
+            remedy_row.set_subtitle_lines(0)
+            remedy_row.set_title_lines(0)
+            remedy_row.add_prefix(Gtk.Image(icon_name="dialog-warning-symbolic"))
+            self._add(self._service_group, remedy_row)
 
         if status.connected and status.last_error:
             error_row = plain(Adw.ActionRow(), title="Last Error", subtitle=status.last_error)

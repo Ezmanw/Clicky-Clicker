@@ -88,6 +88,7 @@ class EvdevSource(InputSource):
         self._wake_w = -1
         self._open: dict[str, _OpenDevice] = {}
         self._needs_reconfigure = False
+        self._warned_zero_devices = False
 
     # --- Enumeration ----------------------------------------------------
 
@@ -248,6 +249,47 @@ class EvdevSource(InputSource):
             wanted = self._suppressed_for(open_device.info.id)
             if wanted != open_device.suppressed:
                 self._apply_grab(open_device, wanted)
+
+        self._warn_if_nothing_readable(paths)
+
+    def _warn_if_nothing_readable(self, paths: set[str]) -> None:
+        """Log once if devices exist but none could be opened.
+
+        This is the situation a user hits after running ``usermod -aG input``
+        without fully logging out: the daemon (started by ``systemd --user``
+        before the group change) keeps the credentials it started with, so
+        every device open silently fails and every binding does nothing, with
+        no error anywhere. Restarting just this service does not help, because
+        it is re-forked by the same still-stale ``systemd --user`` manager --
+        the fix is a full log out and back in (or a reboot).
+        """
+        if self._open or not paths or self._warned_zero_devices:
+            return
+        self._warned_zero_devices = True
+        log.warning(
+            "%d input device(s) exist but none could be opened for reading. "
+            "If you just added this account to the 'input' group, that change "
+            "has not taken effect for this service yet -- log out and back in "
+            "(or reboot), then restart clicky-clicker-daemon.service. "
+            "Restarting the service alone will not fix this, since it is "
+            "relaunched by the same systemd user session that is still stale.",
+            len(paths),
+        )
+
+    @property
+    def watched_device_count(self) -> int:
+        """How many devices are currently open for reading.
+
+        Distinct from :meth:`list_devices`, which the interface calls from its
+        own (usually freshly-started) process and can therefore report success
+        even while the daemon itself -- a different, possibly longer-lived
+        process -- reads nothing at all.
+
+        Safe to read from another thread without a lock: ``self._open`` is only
+        ever mutated by the listener thread, and ``len()`` on a dict is an
+        atomic read of its size field in CPython.
+        """
+        return len(self._open)
 
     def _open_device(self, path: str, selector: selectors.BaseSelector) -> None:
         try:

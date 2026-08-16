@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from gi.repository import Adw, Gio, GLib, Gtk
+from gi.repository import Adw, Gio, GLib, Gtk, Pango
 
 from ..models import Macro
 from ..services import MacroLibrary
@@ -160,6 +160,14 @@ class MainWindow(Adw.ApplicationWindow):
         box.append(self._status_icon)
 
         self._status_label = Gtk.Label(xalign=0.0, hexpand=True, wrap=True)
+        # Capped to two lines with ellipsis, not left to grow freely: a long
+        # message in the narrow sidebar (min width 220px) can wrap to three or
+        # more lines, and this area does not scroll, so an uncapped label can
+        # be pushed past the bottom of a short window. The full text is always
+        # available as a tooltip.
+        self._status_label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+        self._status_label.set_ellipsize(Pango.EllipsizeMode.END)
+        self._status_label.set_lines(2)
         self._status_label.add_css_class("caption")
         self._status_label.add_css_class("dim-label")
         box.append(self._status_label)
@@ -280,7 +288,9 @@ class MainWindow(Adw.ApplicationWindow):
         return GLib.SOURCE_CONTINUE
 
     def _render_status(self, status: DaemonStatus) -> None:
-        self._status_label.set_label(status.summary())
+        summary = status.summary()
+        self._status_label.set_label(summary)
+        self._status_label.set_tooltip_text(summary)
 
         running = bool(status.running)
         self._status_stop.set_visible(running)
