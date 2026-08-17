@@ -6,6 +6,7 @@ import json
 
 import pytest
 
+from clickyclicker.input.uinput_sink import _MOUSE_BUTTON_NAMES
 from clickyclicker.models import (
     Binding,
     BindingKind,
@@ -17,7 +18,7 @@ from clickyclicker.models import (
     TriggerMode,
 )
 from clickyclicker.models.action import ActionType
-from clickyclicker.models.keys import code_for, format_combo, label_for, name_for_code
+from clickyclicker.models.keys import CODES, code_for, format_combo, label_for, name_for_code
 
 
 def build_macro() -> Macro:
@@ -219,3 +220,26 @@ class TestSettings:
 
     def test_empty_emergency_stop_keeps_the_default(self):
         assert Settings.from_dict({"emergency_stop": []}).emergency_stop
+
+
+class TestVirtualMouseCapabilities:
+    """Guards the device-classification bug that silently broke all pointer output.
+
+    udev decides what an input device *is* from the capabilities it advertises.
+    A device offering relative motion together with the joystick/gamepad button
+    range is tagged ``ID_INPUT_JOYSTICK`` rather than ``ID_INPUT_MOUSE``, and
+    libinput ignores joysticks outright -- so the device is created, accepts
+    every write without error, and the compositor silently discards all of it.
+    Clicks, scrolling and pointer movement all stop working with nothing logged.
+    """
+
+    def test_advertises_only_real_pointer_buttons(self):
+        # BTN_JOYSTICK (0x120) through BTN_DIGI (0x140) is the range udev scans
+        # to decide a device is a joystick.
+        for name in _MOUSE_BUTTON_NAMES:
+            code = CODES[name]
+            assert code < 0x120, f"{name} ({code:#x}) is in the joystick button range"
+
+    def test_covers_the_buttons_a_mouse_actually_has(self):
+        for expected in ("BTN_LEFT", "BTN_RIGHT", "BTN_MIDDLE", "BTN_SIDE", "BTN_EXTRA"):
+            assert expected in _MOUSE_BUTTON_NAMES

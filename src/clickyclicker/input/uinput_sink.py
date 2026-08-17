@@ -101,7 +101,7 @@ class UinputSink(InputSink):
             # KEY_ range is not contiguous (it resumes above the BTN_ block at
             # 0x160), so a range filter would silently drop valid keys.
             key_codes = _codes_with_prefix("KEY_", ecodes.KEY_MAX)
-            button_codes = _codes_with_prefix("BTN_", ecodes.KEY_MAX)
+            button_codes = _mouse_button_codes(ecodes)
 
             try:
                 self._keyboard = UInput(
@@ -228,7 +228,20 @@ class UinputSink(InputSink):
                 log.warning("ignoring unknown input code %r", code)
                 return
 
-            device = self._mouse if keys.is_mouse_button(code) else self._keyboard
+            is_button = keys.is_mouse_button(code)
+            if is_button and code not in _MOUSE_BUTTON_NAMES:
+                # Writing a code the device never advertised is accepted by the
+                # kernel and then dropped, so say so rather than appearing to
+                # work. Such buttons are still usable as macro *triggers*, which
+                # read devices directly instead of going through this sink.
+                log.warning(
+                    "%s cannot be sent: the virtual mouse only advertises %s",
+                    code,
+                    ", ".join(_MOUSE_BUTTON_NAMES),
+                )
+                return
+
+            device = self._mouse if is_button else self._keyboard
             device.write(self._ecodes.EV_KEY, numeric, 1 if pressed else 0)
             device.syn()
 
@@ -302,6 +315,43 @@ class UinputSink(InputSink):
 def _abs_axis(AbsInfo: Any) -> Any:  # noqa: N803 - matches python-evdev's own name
     """Describe one axis of the absolute pointer's logical grid."""
     return AbsInfo(value=0, min=0, max=ABS_RANGE, fuzz=0, flat=0, resolution=0)
+
+
+#: Buttons the virtual mouse advertises.
+#:
+#: Deliberately *only* real pointer buttons, not every ``BTN_*`` code the
+#: kernel defines.  udev classifies an input device from the capabilities it
+#: advertises, and a device claiming the gamepad and joystick buttons
+#: (``BTN_TRIGGER``, ``BTN_SOUTH``, ...) alongside relative motion is tagged
+#: ``ID_INPUT_JOYSTICK`` rather than ``ID_INPUT_MOUSE``.  libinput ignores
+#: joysticks entirely, so such a device is created successfully, accepts
+#: writes without error, and is silently dropped by the compositor -- every
+#: click, scroll and pointer move going nowhere with nothing logged anywhere.
+#:
+#: ``BTN_TRIGGER_HAPPY*`` is excluded for the same reason, so mice with very
+#: many buttons are reachable as triggers (which reads devices directly) but
+#: are not replayed through this sink.
+_MOUSE_BUTTON_NAMES = (
+    "BTN_LEFT",
+    "BTN_RIGHT",
+    "BTN_MIDDLE",
+    "BTN_SIDE",
+    "BTN_EXTRA",
+    "BTN_FORWARD",
+    "BTN_BACK",
+    "BTN_TASK",
+)
+
+
+def _mouse_button_codes(ecodes: Any) -> list[int]:
+    """Numeric codes for the buttons the virtual mouse should advertise."""
+    return sorted(
+        {
+            keys.code_for(name)
+            for name in _MOUSE_BUTTON_NAMES
+            if name in keys.CODES and keys.code_for(name) <= ecodes.KEY_MAX
+        }
+    )
 
 
 def _codes_with_prefix(prefix: str, maximum: int) -> list[int]:

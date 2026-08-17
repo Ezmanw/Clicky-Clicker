@@ -484,6 +484,21 @@ device keeps working normally. The visible consequence is that a suppressed
 device shows up as an extra `Clicky Clicker Forward …` device in tools that list
 input hardware.
 
+### Extended mouse buttons cannot be *sent*
+
+The virtual mouse advertises the eight standard pointer buttons
+(left/right/middle, side, extra, forward, back, task). It deliberately does not
+advertise the wider `BTN_*` range: udev classifies an input device from the
+capabilities it advertises, and a device offering relative motion alongside the
+joystick and gamepad buttons is tagged `ID_INPUT_JOYSTICK` rather than
+`ID_INPUT_MOUSE` — and libinput ignores joysticks outright. Such a device is
+created successfully and accepts every write without error while the compositor
+silently discards all of it.
+
+Mice with more buttons than that (`BTN_TRIGGER_HAPPY1` and up) can still be used
+as macro *triggers*, since triggers read devices directly rather than going
+through the virtual mouse. They just cannot be sent as macro *actions*.
+
 ### Timing resolution
 
 Delays are honoured to roughly a millisecond — the granularity the kernel
