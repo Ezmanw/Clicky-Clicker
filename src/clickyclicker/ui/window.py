@@ -187,7 +187,14 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _install_actions(self) -> None:
         entries: list[tuple[str, Callable[[], None], list[str]]] = [
-            ("stop-all", self.stop_all, ["<Control>period", "Escape"]),
+            # Deliberately not bound to plain Escape: that is installed as a
+            # window-wide accelerator, which GTK's shortcut controller matches
+            # before a modal dialog's own key handling ever sees the event --
+            # so Escape inside any dialog (the key chooser, cancelling a
+            # rename, ...) would silently stop every macro instead of closing
+            # the dialog. Ctrl+Alt+Esc, handled independently by the daemon,
+            # remains the true system-wide emergency stop.
+            ("stop-all", self.stop_all, ["<Control>period"]),
             ("new-macro", self._on_new_macro, ["<Control>n"]),
             ("shortcuts", self._show_shortcuts, ["<Control>question"]),
         ]
@@ -391,10 +398,7 @@ def _shortcuts_window(parent: Gtk.Window) -> Gtk.ShortcutsWindow:
     section.add_group(general)
 
     macros = Gtk.ShortcutsGroup(title="Macros", visible=True)
-    for accelerator, title in (
-        ("<Control>period", "Stop all running macros"),
-        ("Escape", "Stop all running macros"),
-    ):
+    for accelerator, title in (("<Control>period", "Stop all running macros"),):
         macros.add_shortcut(
             Gtk.ShortcutsShortcut(accelerator=accelerator, title=title, visible=True)
         )

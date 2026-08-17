@@ -325,7 +325,24 @@ class EvdevSource(InputSource):
         log.debug("stopped watching %s", path)
 
     def _apply_grab(self, open_device: _OpenDevice, wanted: set[str]) -> None:
-        """Take or drop the exclusive grab needed to suppress *wanted*."""
+        """Take or drop the exclusive grab needed to suppress *wanted*.
+
+        *wanted* is narrowed to codes this specific device can actually
+        produce before deciding whether to grab.  A device-independent
+        binding (no ``device_id``) otherwise grabs *every* device on the
+        system to guarantee it catches the right one, including devices that
+        were never going to report that code at all -- a keyboard grabbed for
+        a mouse-button binding, or vice versa.  That is unnecessary exposure
+        to whatever quirks a given device's exclusive-grab and forwarding
+        path might have, for no behavioural benefit.
+        """
+        try:
+            codes = open_device.device.capabilities().get(self._evdev.ecodes.EV_KEY, ())
+            producible = {name for code in codes if (name := keys.name_for_code(code)) is not None}
+        except OSError:
+            producible = set()
+        wanted = wanted & producible
+
         if wanted and not open_device.grabbed:
             try:
                 open_device.start_forwarding(self._evdev)

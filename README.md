@@ -357,7 +357,7 @@ Any of these work:
 - <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Esc</kbd> — the global emergency stop,
   which works with the window closed and cannot be intercepted by a mapping
 - The **Stop** button in the sidebar, visible whenever anything is running
-- <kbd>Ctrl</kbd>+<kbd>.</kbd> or <kbd>Esc</kbd> in the window
+- <kbd>Ctrl</kbd>+<kbd>.</kbd> in the window
 - `systemctl --user stop clicky-clicker-daemon.service`
 
 A macro that stops for any reason releases every key it was holding, so an
@@ -369,7 +369,7 @@ interrupted macro cannot leave a key stuck down.
 | --- | --- |
 | <kbd>Ctrl</kbd>+<kbd>N</kbd> | New macro |
 | <kbd>Ctrl</kbd>+<kbd>,</kbd> | Preferences |
-| <kbd>Ctrl</kbd>+<kbd>.</kbd> / <kbd>Esc</kbd> | Stop all macros |
+| <kbd>Ctrl</kbd>+<kbd>.</kbd> | Stop all macros |
 | <kbd>Ctrl</kbd>+<kbd>?</kbd> | Keyboard shortcuts |
 | <kbd>Ctrl</kbd>+<kbd>Q</kbd> | Quit (the daemon keeps running) |
 
