@@ -78,11 +78,10 @@ class KeyChooserDialog(Adw.Dialog):
         search_focus.connect("enter", lambda *_: self._end_capture())
         self._search.add_controller(search_focus)
 
-        self._capture_button = Gtk.Button(
-            child=Adw.ButtonContent(
-                icon_name="input-keyboard-symbolic", label="Press an Input"
-            )
+        self._capture_content = Adw.ButtonContent(
+            icon_name="input-keyboard-symbolic", label="Press an Input"
         )
+        self._capture_button = Gtk.Button(child=self._capture_content)
         self._capture_button.add_css_class("suggested-action")
         self._capture_button.set_tooltip_text(
             "Detect an input by pressing the key or button you want to use"
@@ -126,7 +125,7 @@ class KeyChooserDialog(Adw.Dialog):
 
         self._build_rows()
         self._install_capture_controllers()
-        self.connect("map", lambda *_: self._on_capture_clicked(self._capture_button))
+        self.connect("map", self._on_mapped)
 
     # --- Construction ---------------------------------------------------
 
@@ -172,9 +171,43 @@ class KeyChooserDialog(Adw.Dialog):
 
     # --- Capture --------------------------------------------------------
 
+    def _on_mapped(self, *_args: object) -> None:
+        """Arm capturing once the dialog is on screen and focus has settled.
+
+        Deferred to an idle callback rather than run directly from ``map``:
+        the dialog assigns its own initial focus after mapping, and arming
+        before that happens means the search entry takes focus a moment later
+        and disarms us again.
+        """
+
+        def arm() -> bool:
+            self._on_capture_clicked(self._capture_button)
+            return GLib.SOURCE_REMOVE
+
+        GLib.idle_add(arm, priority=GLib.PRIORITY_LOW)
+
     def _on_capture_clicked(self, _button: Gtk.Button) -> None:
+        """Arm capturing, or cancel it if it is already armed."""
+        if self._capturing:
+            self._end_capture()
+            return
+
         self._capturing = True
-        self._capture_button.set_sensitive(False)
+
+        # The button must keep focus while armed, and must therefore stay
+        # sensitive. Disabling it (the obvious way to show it is active) moves
+        # focus to the next focusable widget -- the search entry -- whose
+        # focus-enter handler immediately disarms capturing again. The result
+        # was a dialog that said it was listening while silently ignoring every
+        # key, since key events route to the focus widget and a capture-phase
+        # controller only sees them when focus is inside its own subtree.
+        self._capture_button.grab_focus()
+
+        self._capture_content.set_label("Listening — press an input")
+        self._capture_button.remove_css_class("suggested-action")
+        self._capture_button.add_css_class("destructive-action")
+        self._capture_button.set_tooltip_text("Stop listening")
+
         self._capture_status.set_visible(True)
         self._capture_status.set_label(
             "Press any key or mouse button now. Press Escape to cancel.\n"
@@ -183,8 +216,15 @@ class KeyChooserDialog(Adw.Dialog):
         )
 
     def _end_capture(self) -> None:
+        if not self._capturing:
+            return
         self._capturing = False
-        self._capture_button.set_sensitive(True)
+        self._capture_content.set_label("Press an Input")
+        self._capture_button.remove_css_class("destructive-action")
+        self._capture_button.add_css_class("suggested-action")
+        self._capture_button.set_tooltip_text(
+            "Detect an input by pressing the key or button you want to use"
+        )
         self._capture_status.set_visible(False)
 
     def _on_key_pressed(
