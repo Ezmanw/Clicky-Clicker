@@ -14,6 +14,7 @@ from enum import Enum
 from typing import Any
 
 from . import keys
+from .app import AppRef
 from .macro import TriggerMode
 
 __all__ = ["BindingKind", "Binding", "BindingSet"]
@@ -30,6 +31,9 @@ class BindingKind(Enum):
 
     DISABLE = "disable"
     """The input is swallowed and does nothing."""
+
+    LAUNCH_APP = "launch_app"
+    """Pressing the input opens an application."""
 
 
 @dataclass(slots=True)
@@ -49,6 +53,9 @@ class Binding:
     More than one entry produces a combination: ``["KEY_LEFTCTRL", "KEY_C"]``
     makes the bound input behave as Ctrl+C.
     """
+
+    app: AppRef | None = None
+    """Application to open, for :data:`BindingKind.LAUNCH_APP`."""
 
     trigger_override: TriggerMode | None = None
     """Overrides the macro's own trigger mode when set.
@@ -96,6 +103,8 @@ class Binding:
             if not self.output:
                 return "No replacement chosen"
             return f"Acts as {keys.format_combo(self.output)}"
+        if self.kind is BindingKind.LAUNCH_APP:
+            return f"Opens {self.app.label}" if self.app else "No application chosen"
         if macro_name:
             return f"Runs “{macro_name}”"
         return "No macro chosen"
@@ -107,6 +116,7 @@ class Binding:
             kind=self.kind,
             macro_id=self.macro_id,
             output=list(self.output),
+            app=self.app,
             trigger_override=self.trigger_override,
             device_id=self.device_id,
             suppress_original=self.suppress_original,
@@ -123,6 +133,8 @@ class Binding:
             return self.macro_id in known_macro_ids
         if self.kind is BindingKind.REMAP:
             return bool(self.output)
+        if self.kind is BindingKind.LAUNCH_APP:
+            return self.app is not None
         return True
 
     # --- Serialisation --------------------------------------------------
@@ -139,6 +151,8 @@ class Binding:
             data["macro_id"] = self.macro_id
         if self.kind is BindingKind.REMAP:
             data["output"] = list(self.output)
+        if self.kind is BindingKind.LAUNCH_APP and self.app is not None:
+            data["app"] = self.app.to_dict()
         if self.trigger_override is not None:
             data["trigger_override"] = self.trigger_override.value
         if self.device_id:
@@ -175,6 +189,7 @@ class Binding:
             kind=kind,
             macro_id=data.get("macro_id") or None,
             output=output,
+            app=AppRef.from_dict(data.get("app")),
             trigger_override=trigger_override,
             device_id=data.get("device_id") or None,
             suppress_original=bool(data.get("suppress_original", True)),

@@ -23,7 +23,7 @@ import threading
 from collections.abc import Callable
 
 from ..input.backend import InputSink
-from ..models import Macro, MacroAction
+from ..models import AppRef, Macro, MacroAction
 from ..models.action import ActionType
 
 log = logging.getLogger(__name__)
@@ -46,10 +46,12 @@ class RunHandle:
         on_finished: Callable[[RunHandle], None],
         on_step: Callable[[RunHandle, int], None] | None = None,
         on_error: Callable[[RunHandle, Exception], None] | None = None,
+        launcher: Callable[[AppRef], None] | None = None,
     ) -> None:
         self.macro = macro
         self.key = macro.id
         self._sink = sink
+        self._launcher = launcher
         self._iterations = iterations
         self._on_finished = on_finished
         self._on_step = on_step
@@ -154,6 +156,15 @@ class RunHandle:
         elif kind is ActionType.SCROLL:
             self._sink.scroll(_int(params.get("amount")), bool(params.get("horizontal")))
 
+        elif kind is ActionType.LAUNCH_APP:
+            app = AppRef.from_dict(params.get("app"))
+            if app is None:
+                log.warning("skipping an Open Application step with no app chosen")
+            elif self._launcher is None:
+                log.warning("cannot open %s: no launcher configured", app.label)
+            else:
+                self._launcher(app)
+
         else:  # pragma: no cover - unreachable while ActionType is exhaustive
             log.warning("no handler for action type %r", kind)
 
@@ -214,8 +225,11 @@ class RunHandle:
 class MacroExecutor:
     """Owns the sink and every in-flight run."""
 
-    def __init__(self, sink: InputSink) -> None:
+    def __init__(
+        self, sink: InputSink, launcher: Callable[[AppRef], None] | None = None
+    ) -> None:
         self._sink = sink
+        self._launcher = launcher
         self._lock = threading.RLock()
         self._runs: dict[str, RunHandle] = {}
         self.on_changed: Callable[[], None] | None = None
@@ -280,6 +294,7 @@ class MacroExecutor:
                 on_finished=self._finished,
                 on_step=on_step,
                 on_error=self._errored,
+                launcher=self._launcher,
             )
             handle.key = run_key
             self._runs[run_key] = handle

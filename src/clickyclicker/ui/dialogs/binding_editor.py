@@ -8,13 +8,14 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, Gio, Gtk
 
-from ...models import Binding, BindingKind, TriggerMode
+from ...models import AppRef, Binding, BindingKind, TriggerMode
 from ...models.keys import format_combo, label_for
 from ...models.macro import TRIGGER_LABELS
 from ...services import MacroLibrary
 from ..widgets.rows import plain
+from .app_chooser import choose_app
 from .combo_editor import edit_combo
 from .key_chooser import choose_key
 
@@ -22,6 +23,7 @@ __all__ = ["BindingEditorDialog", "edit_binding"]
 
 _KIND_LABELS: list[tuple[BindingKind, str, str]] = [
     (BindingKind.RUN_MACRO, "Run a macro", "Play one of your saved macros"),
+    (BindingKind.LAUNCH_APP, "Open an application", "Start an app when this input is pressed"),
     (BindingKind.REMAP, "Act as another input", "Replace this input with a different key"),
     (BindingKind.DISABLE, "Do nothing", "Swallow this input entirely"),
 ]
@@ -95,6 +97,17 @@ class BindingEditorDialog(Adw.Dialog):
         self._output_row.add_suffix(output_button)
         self._output_row.set_activatable_widget(output_button)
         action_group.add(self._output_row)
+
+        self._app_row = plain(Adw.ActionRow(title="Application"))
+        self._app_icon = Gtk.Image(icon_name="application-x-executable-symbolic")
+        self._app_icon.set_icon_size(Gtk.IconSize.LARGE)
+        self._app_row.add_prefix(self._app_icon)
+        app_button = Gtk.Button(label="Choose…")
+        app_button.set_valign(Gtk.Align.CENTER)
+        app_button.connect("clicked", lambda *_: self._choose_app())
+        self._app_row.add_suffix(app_button)
+        self._app_row.set_activatable_widget(app_button)
+        action_group.add(self._app_row)
         page.add(action_group)
 
         behaviour_group = Adw.PreferencesGroup(
@@ -178,8 +191,12 @@ class BindingEditorDialog(Adw.Dialog):
 
             is_macro = binding.kind is BindingKind.RUN_MACRO
             is_remap = binding.kind is BindingKind.REMAP
+            is_app = binding.kind is BindingKind.LAUNCH_APP
             self._macro_row.set_visible(is_macro)
             self._output_row.set_visible(is_remap)
+            self._app_row.set_visible(is_app)
+            self._app_row.set_subtitle(binding.app.label if binding.app else "Not chosen")
+            self._app_icon.set_from_gicon(_app_icon(binding.app))
             self._trigger_row.set_visible(is_macro)
 
             if is_macro and self._macros:
@@ -200,7 +217,7 @@ class BindingEditorDialog(Adw.Dialog):
             self._trigger_row.set_selected(override_index)
 
             # Remaps and disables have no meaningful "also deliver the original".
-            self._suppress_row.set_sensitive(is_macro)
+            self._suppress_row.set_sensitive(is_macro or is_app)
             self._suppress_row.set_active(binding.effective_suppress())
             self._enabled_row.set_active(binding.enabled)
 
@@ -219,6 +236,10 @@ class BindingEditorDialog(Adw.Dialog):
             if not binding.output:
                 return "Choose what this input should act as."
             return f"{input_label} will behave as {format_combo(binding.output)}."
+        if binding.kind is BindingKind.LAUNCH_APP:
+            if binding.app is None:
+                return "Choose an application for this input to open."
+            return f"Pressing {input_label} opens {binding.app.label}."
 
         macro = self._library.macro(binding.macro_id)
         if macro is None:
@@ -235,6 +256,8 @@ class BindingEditorDialog(Adw.Dialog):
             return bool(binding.macro_id)
         if binding.kind is BindingKind.REMAP:
             return bool(binding.output)
+        if binding.kind is BindingKind.LAUNCH_APP:
+            return binding.app is not None
         return True
 
     # --- Editing --------------------------------------------------------
@@ -255,6 +278,13 @@ class BindingEditorDialog(Adw.Dialog):
 
         edit_combo(self, list(self._binding.output), changed)
 
+    def _choose_app(self) -> None:
+        def chosen(app: AppRef) -> None:
+            self._binding.app = app
+            self._render()
+
+        choose_app(self, chosen, selected=self._binding.app)
+
     def _on_kind_changed(self, combo: Adw.ComboRow, _param: object) -> None:
         if self._updating:
             return
@@ -266,6 +296,9 @@ class BindingEditorDialog(Adw.Dialog):
         ):
             self._binding.macro_id = self._macros[0].id
         self._render()
+        # Choosing the app is the only thing left to do, so go straight there.
+        if self._binding.kind is BindingKind.LAUNCH_APP and self._binding.app is None:
+            self._choose_app()
 
     def _on_macro_changed(self, combo: Adw.ComboRow, _param: object) -> None:
         if self._updating or not self._macros:
@@ -296,6 +329,15 @@ class BindingEditorDialog(Adw.Dialog):
             return
         self._on_save(self._binding)
         self.close()
+
+
+def _app_icon(app: AppRef | None) -> Gio.Icon:
+    """The installed app's own icon, or a generic one if it cannot be found."""
+    if app is not None:
+        info = Gio.DesktopAppInfo.new(app.id)
+        if info is not None and info.get_icon() is not None:
+            return info.get_icon()
+    return Gio.ThemedIcon.new("application-x-executable-symbolic")
 
 
 def edit_binding(

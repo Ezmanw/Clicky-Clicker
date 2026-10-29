@@ -33,6 +33,9 @@ class MappingsPage(Adw.NavigationPage):
         self._macro_group = Adw.PreferencesGroup(
             title="Macro Triggers", description="Inputs that run a macro."
         )
+        self._app_group = Adw.PreferencesGroup(
+            title="App Shortcuts", description="Inputs that open an application."
+        )
         self._remap_group = Adw.PreferencesGroup(
             title="Remapped Inputs", description="Inputs replaced by a different key."
         )
@@ -62,8 +65,8 @@ class MappingsPage(Adw.NavigationPage):
             icon_name="input-mouse-symbolic",
             title="No Mappings Yet",
             description=(
-                "Assign a key or mouse button to a macro, or remap one input to "
-                "another, such as Caps Lock to Escape."
+                "Assign a key or mouse button to a macro or an application, or "
+                "remap one input to another, such as Caps Lock to Escape."
             ),
         )
         create = Gtk.Button(label="Create a Mapping")
@@ -75,6 +78,7 @@ class MappingsPage(Adw.NavigationPage):
 
         page = Adw.PreferencesPage()
         page.add(self._macro_group)
+        page.add(self._app_group)
         page.add(self._remap_group)
 
         self._stack = Gtk.Stack()
@@ -99,14 +103,20 @@ class MappingsPage(Adw.NavigationPage):
         self._stack.set_visible_child_name("list" if bindings else "empty")
 
         macro_bindings = [b for b in bindings if b.kind is BindingKind.RUN_MACRO]
-        other_bindings = [b for b in bindings if b.kind is not BindingKind.RUN_MACRO]
+        app_bindings = [b for b in bindings if b.kind is BindingKind.LAUNCH_APP]
+        other_bindings = [
+            b for b in bindings if b.kind not in (BindingKind.RUN_MACRO, BindingKind.LAUNCH_APP)
+        ]
 
         for binding in macro_bindings:
             self._add_row(self._macro_group, binding)
+        for binding in app_bindings:
+            self._add_row(self._app_group, binding)
         for binding in other_bindings:
             self._add_row(self._remap_group, binding)
 
         self._macro_group.set_visible(bool(macro_bindings))
+        self._app_group.set_visible(bool(app_bindings))
         self._remap_group.set_visible(bool(other_bindings))
         self._render_problems()
 

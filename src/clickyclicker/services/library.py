@@ -251,6 +251,7 @@ class MacroLibrary:
             for binding in self._bindings.bindings
             if (binding.kind is BindingKind.RUN_MACRO and binding.macro_id not in known)
             or (binding.kind is BindingKind.REMAP and not binding.output)
+            or (binding.kind is BindingKind.LAUNCH_APP and binding.app is None)
         ]
 
     # --- Settings commands ----------------------------------------------

@@ -14,7 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from ..models import Macro
+from ..models import AppRef, Macro
 from ..models.action import ActionType
 from ..models.keys import CODES, label_for
 from ..models.macro import PlaybackMode
@@ -86,6 +86,11 @@ def _check_codes(macro: Macro) -> list[Issue]:
         if action.type is ActionType.KEY_COMBO and not combo:
             issues.append(
                 Issue(Severity.ERROR, "This combination has no keys.", action_index=index)
+            )
+        no_app = AppRef.from_dict(action.params.get("app")) is None
+        if action.type is ActionType.LAUNCH_APP and no_app:
+            issues.append(
+                Issue(Severity.ERROR, "Choose an application to open.", action_index=index)
             )
     return issues
 

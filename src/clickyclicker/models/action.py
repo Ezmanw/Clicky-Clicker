@@ -19,6 +19,7 @@ from enum import Enum
 from typing import Any
 
 from . import keys
+from .app import AppRef
 
 __all__ = [
     "ActionType",
@@ -50,6 +51,7 @@ class ActionType(Enum):
     MOUSE_CLICK_AT = "mouse_click_at"
     SCROLL = "scroll"
     WAIT = "wait"
+    LAUNCH_APP = "launch_app"
 
 
 class ParamKind(Enum):
@@ -68,6 +70,8 @@ class ParamKind(Enum):
     INTEGER = "integer"
     CHOICE = "choice"
     BOOLEAN = "boolean"
+    APP = "app"
+    """An installed application, chosen from the app picker."""
 
 
 #: Upper bound for any single delay, in milliseconds (one hour).  Generous, but
@@ -183,6 +187,11 @@ def _sum_scroll(p: dict[str, Any]) -> str:
     else:
         direction = "up" if amount >= 0 else "down"
     return f"Scroll {direction} {abs(amount)}"
+
+
+def _sum_launch_app(p: dict[str, Any]) -> str:
+    app = AppRef.from_dict(p.get("app"))
+    return f"Open {app.label}" if app else "Open an application"
 
 
 def _sum_wait(p: dict[str, Any]) -> str:
@@ -374,12 +383,20 @@ ACTION_SPECS: dict[ActionType, ActionSpec] = {
         ),
         summarise=_sum_wait,
     ),
+    ActionType.LAUNCH_APP: ActionSpec(
+        type=ActionType.LAUNCH_APP,
+        label="Open Application",
+        icon_name="application-x-executable-symbolic",
+        category="Apps",
+        params=(ParamSpec(key="app", label="Application", kind=ParamKind.APP, default=None),),
+        summarise=_sum_launch_app,
+    ),
 }
 
 
 def action_types_in_order() -> list[ActionType]:
     """Action types grouped by category, for the 'Add Action' menu."""
-    order = ("Keyboard", "Mouse", "Pointer", "Timing")
+    order = ("Keyboard", "Mouse", "Pointer", "Timing", "Apps")
     return sorted(
         ACTION_SPECS,
         key=lambda t: (order.index(ACTION_SPECS[t].category), list(ACTION_SPECS).index(t)),

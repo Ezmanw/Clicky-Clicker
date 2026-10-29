@@ -64,6 +64,7 @@ step without deleting it, and test the whole macro from the editor.
 | Mouse | Click, Press, Release — including side and extended buttons |
 | Pointer | Move to an absolute position, Move by an offset, Click at a position |
 | Other | Scroll (vertical and horizontal), Wait (millisecond precision) |
+| Apps | Open Application — any installed app, including Flatpaks and Steam games |
 
 **Playback modes** — run once, repeat a set number of times, repeat forever,
 repeat while held, or toggle on and off, with a configurable gap between
@@ -72,6 +73,11 @@ repeats that is separate from any `Wait` inside the macro.
 **Trigger behaviours** — on press, on release, while held, toggle, or one-shot.
 A binding can override the macro's own setting, so the same macro can be held on
 one button and toggled on another.
+
+**App shortcuts** — open any installed application with a single key or button
+(*Mappings → Open an application*). Apps open in their own systemd scope, so
+restarting the background service never closes them, and they get your
+desktop session's environment even when the service started at boot.
 
 **Input remapping** — map any key or button to any other, including to
 combinations (`Caps Lock → Escape`, `Mouse Button 5 → Ctrl+C`), or disable an

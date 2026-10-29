@@ -15,6 +15,7 @@ from .action import (
     ParamSpec,
     spec_for,
 )
+from .app import AppRef
 from .binding import Binding, BindingKind, BindingSet
 from .macro import (
     PLAYBACK_LABELS,
@@ -29,6 +30,7 @@ from .settings import Settings
 
 __all__ = [
     "ACTION_SPECS",
+    "AppRef",
     "ActionSpec",
     "ActionType",
     "Binding",

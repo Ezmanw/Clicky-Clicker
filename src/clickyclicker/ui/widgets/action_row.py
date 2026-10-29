@@ -18,7 +18,7 @@ from typing import Any
 
 from gi.repository import Adw, Gdk, GObject, Gtk
 
-from ...models import keys
+from ...models import AppRef, keys
 from ...models.action import (
     ACTION_SPECS,
     ActionType,
@@ -27,6 +27,7 @@ from ...models.action import (
     ParamSpec,
     action_types_in_order,
 )
+from ..dialogs.app_chooser import choose_app
 from ..dialogs.combo_editor import edit_combo
 from ..dialogs.key_chooser import choose_key
 from ..dialogs.position_picker import pick_position
@@ -211,6 +212,8 @@ class ActionEditorRow(Adw.ExpanderRow):
             return self._build_boolean_row(spec)
         if spec.kind is ParamKind.CHOICE:
             return self._build_choice_row(spec)
+        if spec.kind is ParamKind.APP:
+            return self._build_app_row(spec)
         return None
 
     def _build_key_row(self, spec: ParamSpec) -> Adw.ActionRow:
@@ -239,6 +242,30 @@ class ActionEditorRow(Adw.ExpanderRow):
                 mouse=True,
                 on_chosen=chosen,
             )
+
+        button.connect("clicked", on_clicked)
+        row.add_suffix(button)
+        row.set_activatable_widget(button)
+        return row
+
+    def _build_app_row(self, spec: ParamSpec) -> Adw.ActionRow:
+        current = AppRef.from_dict(self._action.params.get(spec.key))
+
+        row = plain(Adw.ActionRow(title=spec.label))
+        row.set_subtitle(current.label if current else "Not chosen")
+
+        button = Gtk.Button(label="Choose…")
+        button.set_valign(Gtk.Align.CENTER)
+        button.set_tooltip_text("Choose the application to open")
+
+        def on_clicked(_button: Gtk.Button) -> None:
+            def chosen(app: AppRef) -> None:
+                self._action.params[spec.key] = app.to_dict()
+                row.set_subtitle(app.label)
+                self.refresh_titles()
+                self._on_changed()
+
+            choose_app(self, chosen, selected=AppRef.from_dict(self._action.params.get(spec.key)))
 
         button.connect("clicked", on_clicked)
         row.add_suffix(button)

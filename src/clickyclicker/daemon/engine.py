@@ -25,8 +25,9 @@ from ..input import create_sink, create_source
 from ..input.backend import InputEvent, InputSource, KeyState
 from ..input.evdev_backend import SUPPRESS_ANY_DEVICE
 from ..macros.executor import MacroExecutor
-from ..models import Binding, BindingKind, Macro, Settings, TriggerMode
+from ..models import AppRef, Binding, BindingKind, Macro, Settings, TriggerMode
 from ..persistence import MacroStore, paths, read_json, write_json
+from ..services.launcher import launch
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ class Engine:
         sink = create_sink()
         sink.open()
         self._restore_screen_size(sink)
-        executor = MacroExecutor(sink)
+        executor = MacroExecutor(sink, launcher=self._launch)
         executor.on_changed = self._status_changed
         executor.on_error = self._macro_errored
 
@@ -312,6 +313,11 @@ class Engine:
             self._apply_remap(binding, pressed, executor)
             return
 
+        if binding.kind is BindingKind.LAUNCH_APP:
+            if pressed and binding.app is not None:
+                self._launch(binding.app)
+            return
+
         with self._lock:
             macro = self._macros.get(binding.macro_id or "")
         if macro is None:
@@ -359,6 +365,14 @@ class Engine:
                 self.on_status_changed()
             except Exception:  # noqa: BLE001
                 log.exception("status observer failed")
+
+    def _launch(self, app: AppRef) -> None:
+        """Open an application, recording any failure for the status page."""
+
+        def failed(message: str) -> None:
+            self.last_error = message
+
+        launch(app, on_error=failed)
 
     def _macro_errored(self, macro: Macro, exc: Exception) -> None:
         self.last_error = f"{macro.name}: {exc}"
