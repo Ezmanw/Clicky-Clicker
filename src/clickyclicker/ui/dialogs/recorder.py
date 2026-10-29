@@ -26,6 +26,7 @@ from ...input.backend import InputEvent, KeyState
 from ...macros import MacroRecorder
 from ...models import MacroAction, Settings
 from ...models import keys as key_table
+from ...models.action import ActionType
 from ..widgets.rows import plain
 
 __all__ = ["RecorderDialog", "record_macro"]
@@ -58,12 +59,17 @@ class RecorderDialog(Adw.Dialog):
 
         self._on_finished = on_finished
         self._recorder = MacroRecorder(
-            capture_delays=settings.recording_capture_delays,
+            # Timing is always captured; whether to keep it is chosen after
+            # recording (see _timing_row), so it can be toggled while looking
+            # at the result rather than having to be decided up front.
+            capture_delays=True,
             minimum_delay_ms=settings.recording_min_delay_ms,
             # Escape stops the recording, so it must not appear in the result.
             ignored_codes={"KEY_ESC"},
         )
         self._recorder.on_changed = self._on_recorded
+        self._keep_timing = settings.recording_capture_delays
+        self._ignoring_click = False
         self._preview_rows: list[Adw.ActionRow] = []
 
         self._build()
@@ -104,8 +110,18 @@ class RecorderDialog(Adw.Dialog):
         buttons.append(self._stop_button)
         self._status.set_child(buttons)
 
+        timing_group = Adw.PreferencesGroup()
+        self._timing_row = Adw.SwitchRow(
+            title="Keep Recorded Timing",
+            subtitle="Turn off to drop every pause, so the macro plays back instantly",
+        )
+        self._timing_row.set_active(self._keep_timing)
+        self._timing_row.connect("notify::active", self._on_timing_toggled)
+        timing_group.add(self._timing_row)
+
         self._preview_group = Adw.PreferencesGroup(title="Captured Actions")
         preview_page = Adw.PreferencesPage()
+        preview_page.add(timing_group)
         preview_page.add(self._preview_group)
 
         self._stack = Gtk.Stack()
@@ -191,12 +207,26 @@ class RecorderDialog(Adw.Dialog):
         self,
         gesture: Gtk.GestureClick,
         _n_press: int,
-        _x: float,
-        _y: float,
+        x: float,
+        y: float,
         pressed: bool = True,
     ) -> None:
         if not self._recorder.is_recording:
             return
+
+        # This gesture runs in the capture phase on the whole dialog, so it sees
+        # a click before any button inside does. Claiming it there meant the
+        # Stop button never received its own click: pressing Stop recorded a
+        # left click instead of stopping. Clicks that land on one of the
+        # dialog's controls are left alone (press and its matching release).
+        if pressed:
+            self._ignoring_click = _lands_on_button(gesture.get_widget(), x, y)
+        if self._ignoring_click:
+            if not pressed:
+                self._ignoring_click = False
+            gesture.set_state(Gtk.EventSequenceState.DENIED)
+            return
+
         name = _GDK_BUTTON_TO_CODE.get(gesture.get_current_button())
         if name is None:
             return
@@ -217,8 +247,19 @@ class RecorderDialog(Adw.Dialog):
         self._recorder.discard()
         self.close()
 
-    def _save(self) -> None:
+    def _captured_actions(self) -> list[MacroAction]:
+        """The recording, with or without its pauses depending on the switch."""
         actions = self._recorder.actions()
+        if self._keep_timing:
+            return actions
+        return [action for action in actions if action.type is not ActionType.WAIT]
+
+    def _on_timing_toggled(self, row: Adw.SwitchRow, _param: object) -> None:
+        self._keep_timing = row.get_active()
+        self._render()
+
+    def _save(self) -> None:
+        actions = self._captured_actions()
         self.close()
         if actions:
             GLib.idle_add(self._deliver, actions)
@@ -247,7 +288,7 @@ class RecorderDialog(Adw.Dialog):
                 "window. Press Escape or Stop when you are finished."
             )
         elif captured:
-            self._status.set_title(f"Captured {captured} action(s)")
+            self._status.set_title(f"Captured {len(self._captured_actions())} action(s)")
             self._status.set_description("Add them to the macro, or record again to replace them.")
         else:
             self._status.set_title("Ready to Record")
@@ -269,12 +310,24 @@ class RecorderDialog(Adw.Dialog):
         if self._recorder.is_recording:
             return
 
-        for index, action in enumerate(self._recorder.actions()):
+        for index, action in enumerate(self._captured_actions()):
             row = plain(Adw.ActionRow(), title=f"{index + 1}. {action.summary()}")
             row.set_subtitle(action.spec.label)
             row.add_prefix(Gtk.Image(icon_name=action.spec.icon_name))
             self._preview_group.add(row)
             self._preview_rows.append(row)
+
+
+def _lands_on_button(widget: Gtk.Widget | None, x: float, y: float) -> bool:
+    """Whether the point (in *widget*'s coordinates) is over a button inside it."""
+    if widget is None:
+        return False
+    target = widget.pick(x, y, Gtk.PickFlags.DEFAULT)
+    while target is not None and target is not widget:
+        if isinstance(target, Gtk.Button):
+            return True
+        target = target.get_parent()
+    return False
 
 
 def record_macro(
