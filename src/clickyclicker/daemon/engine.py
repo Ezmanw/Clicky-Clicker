@@ -26,7 +26,7 @@ from ..input.backend import InputEvent, InputSource, KeyState
 from ..input.evdev_backend import SUPPRESS_ANY_DEVICE
 from ..macros.executor import MacroExecutor
 from ..models import Binding, BindingKind, Macro, Settings, TriggerMode
-from ..persistence import MacroStore
+from ..persistence import MacroStore, paths, read_json, write_json
 
 log = logging.getLogger(__name__)
 
@@ -70,6 +70,7 @@ class Engine:
 
         sink = create_sink()
         sink.open()
+        self._restore_screen_size(sink)
         executor = MacroExecutor(sink)
         executor.on_changed = self._status_changed
         executor.on_error = self._macro_errored
@@ -173,6 +174,25 @@ class Engine:
             setter = getattr(sink, "set_screen_size", None)
             if setter is not None:
                 setter(width, height)
+        # Remembered so a daemon started at boot -- before the window has ever
+        # been opened to report it -- still scales absolute moves correctly.
+        try:
+            write_json(_screen_file(), {"width": int(width), "height": int(height)})
+        except OSError as exc:
+            log.warning("could not remember the screen size: %s", exc)
+
+    def _restore_screen_size(self, sink: object) -> None:
+        """Apply the last desktop size the interface reported, if any."""
+        setter = getattr(sink, "set_screen_size", None)
+        if setter is None:
+            return
+        try:
+            data = read_json(_screen_file())
+            setter(int(data["width"]), int(data["height"]))
+        except FileNotFoundError:
+            return
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            log.warning("ignoring unreadable screen size file: %s", exc)
 
     # --- Status ---------------------------------------------------------
 
@@ -342,3 +362,8 @@ class Engine:
 
     def _macro_errored(self, macro: Macro, exc: Exception) -> None:
         self.last_error = f"{macro.name}: {exc}"
+
+
+def _screen_file():
+    """Where the last reported desktop size is kept between daemon runs."""
+    return paths.state_dir() / "screen.json"
